@@ -5,7 +5,7 @@ $docsDirectory = [System.IO.Path]::GetFullPath((Join-Path $projectRoot 'docs'))
 $staticOutputDirectory = [System.IO.Path]::GetFullPath((Join-Path $projectRoot 'dist\client'))
 $entryFile = [System.IO.Path]::GetFullPath((Join-Path $staticOutputDirectory 'index.html'))
 $vinextCli = [System.IO.Path]::GetFullPath((Join-Path $projectRoot 'node_modules\vinext\dist\cli.js'))
-$prefixedAssetsDirectory = [System.IO.Path]::GetFullPath((Join-Path $docsDirectory 'tongil-xi-maker'))
+$prefixedAssetsDirectory = [System.IO.Path]::GetFullPath((Join-Path $docsDirectory 'tongil22'))
 
 if (
   [System.IO.Path]::GetDirectoryName($docsDirectory) -ne $projectRoot -or
@@ -19,7 +19,7 @@ if (Test-Path -LiteralPath $entryFile) {
 }
 
 $env:GITHUB_PAGES = 'true'
-$env:NEXT_PUBLIC_BASE_PATH = '/tongil-xi-maker'
+$env:NEXT_PUBLIC_BASE_PATH = '/tongil22'
 
 & node $vinextCli build
 $buildExitCode = $LASTEXITCODE

@@ -4,10 +4,10 @@
 
 ## GitHub에 올리기
 
-이 폴더 자체가 Git 저장소이며 기본 브랜치는 `main`입니다. GitHub에서 비어 있는 저장소를 **`tongil-xi-maker`**라는 이름으로 만든 뒤 이 저장소를 연결해 `main` 브랜치를 올리면 됩니다.
+이 폴더 자체가 Git 저장소이며 기본 브랜치는 `main`입니다. 현재 GitHub 저장소는
+[`alexyoo49-netize/tongil22`](https://github.com/alexyoo49-netize/tongil22)로 연결되어 있습니다.
 
 ```bash
-git remote add origin https://github.com/내아이디/tongil-xi-maker.git
 git push -u origin main
 ```
 
@@ -17,10 +17,11 @@ git push -u origin main
 
 1. `Settings` → `Pages`
 2. `Build and deployment`의 `Source`를 `Deploy from a branch`로 선택
-3. `Branch`를 `main`, 폴더를 `/docs`로 선택
+3. `Branch`를 `main`, 폴더를 **`/docs`**로 선택 (`/(root)`가 아님)
 4. `Save`
 
-저장소 이름을 바꾸면 `scripts/build-github-pages.ps1`의 `NEXT_PUBLIC_BASE_PATH`도 같은 이름으로 바꾼 뒤 `npm run build:pages`를 다시 실행해야 합니다.
+현재 정적 자산 경로는 저장소 이름에 맞춰 `/tongil22`로 설정되어 있습니다. 저장소 이름을 바꾸면
+`scripts/build-github-pages.ps1`의 `NEXT_PUBLIC_BASE_PATH`도 같은 이름으로 바꾼 뒤 `npm run build:pages`를 다시 실행해야 합니다.
 
 ## 개발
 
