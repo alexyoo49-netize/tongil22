@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -35,15 +35,14 @@ import {
   unitedLineup,
 } from './game-data';
 import { analyzeLineup, playerOverall, samplePoisson } from './game-engine';
+import {
+  LiveMatchDialog,
+  type MatchPlaybackResult,
+  type MatchPlaybackSession,
+} from './live-match-dialog';
 
 type Filter = 'all' | Nation;
-type MatchResult = {
-  ours: number;
-  theirs: number;
-  label: string;
-  tone: 'win' | 'draw' | 'loss';
-  highlights: string[];
-};
+type MatchResult = MatchPlaybackResult;
 
 const nationLabel: Record<Nation, string> = { south: '남한', north: '북한' };
 
@@ -173,7 +172,10 @@ export default function Home() {
   const [focusedPlayerId, setFocusedPlayerId] = useState('son-heungmin');
   const [chosenTactic, setChosenTactic] = useState<TacticId | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
+  const [matchSession, setMatchSession] = useState<MatchPlaybackSession | null>(null);
   const [notice, setNotice] = useState('교체할 포지션이나 선수 카드를 선택하세요.');
+  const matchSessionCounter = useRef(0);
+  const matchLaunchLocked = useRef(false);
 
   const selectedOpponent = opponents.find((opponent) => opponent.id === opponentId) ?? null;
   const autoAnalysis = useMemo(
@@ -196,17 +198,23 @@ export default function Home() {
       }));
   const filteredPlayers = players.filter((player) => filter === 'all' || player.nation === filter);
 
+  function clearMatch() {
+    matchLaunchLocked.current = false;
+    setMatchSession(null);
+    setMatchResult(null);
+  }
+
   function chooseOpponent(opponent: Opponent) {
     setOpponentId(opponent.id);
     setChosenTactic(null);
-    setMatchResult(null);
+    clearMatch();
   }
 
   function startBuilder() {
     if (!selectedOpponent) return;
     setActiveSlot(null);
     setPendingPlayerId(null);
-    setMatchResult(null);
+    clearMatch();
     setPhase('builder');
     setNotice(`${selectedOpponent.name}의 ${selectedOpponent.style}에 맞설 11명을 구성하세요.`);
   }
@@ -214,7 +222,7 @@ export default function Home() {
   function returnToOpponent() {
     setActiveSlot(null);
     setPendingPlayerId(null);
-    setMatchResult(null);
+    clearMatch();
     setNotice('교체할 포지션이나 선수 카드를 선택하세요.');
     setPhase('opponent');
   }
@@ -222,7 +230,7 @@ export default function Home() {
   function resetInteraction(message: string) {
     setActiveSlot(null);
     setPendingPlayerId(null);
-    setMatchResult(null);
+    clearMatch();
     setNotice(message);
   }
 
@@ -280,12 +288,13 @@ export default function Home() {
 
   function selectTactic(tacticId: TacticId | null) {
     setChosenTactic(tacticId);
-    setMatchResult(null);
+    clearMatch();
     setNotice(tacticId ? '선택 전술을 반영해 승률을 다시 계산했습니다.' : '상대와 선수 조합에 맞는 추천 전술을 자동 적용했습니다.');
   }
 
   function simulateMatch() {
-    if (!analysis || !selectedOpponent) return;
+    if (!analysis || !selectedOpponent || matchLaunchLocked.current) return;
+    matchLaunchLocked.current = true;
     const ours = samplePoisson(analysis.expectedFor);
     const theirs = samplePoisson(analysis.expectedAgainst);
     const tone: MatchResult['tone'] = ours > theirs ? 'win' : ours === theirs ? 'draw' : 'loss';
@@ -294,7 +303,7 @@ export default function Home() {
       .map((slotId) => playerById.get(lineup[slotId as SlotId]))
       .filter((player): player is NonNullable<typeof player> => Boolean(player))
       .sort((a, b) => (b.stats?.finishing ?? 0) - (a.stats?.finishing ?? 0));
-    setMatchResult({
+    const result: MatchResult = {
       ours,
       theirs,
       label,
@@ -306,7 +315,33 @@ export default function Home() {
           ? `남북 혼합 ${analysis.mixedLines}개 라인에서 연계 보너스를 얻었습니다.`
           : `${analysis.weakSpot.player.name}의 ${analysis.weakSpot.score}점 포지션 적합도를 보완해 보세요.`,
       ],
+    };
+    setMatchResult(null);
+    setMatchSession({
+      id: ++matchSessionCounter.current,
+      lineup: { ...lineup },
+      opponent: selectedOpponent,
+      tacticId: analysis.applied.id,
+      tacticLabel: analysis.applied.label,
+      winProbability: analysis.winProbability,
+      result,
     });
+    window.setTimeout(() => { matchLaunchLocked.current = false; }, 350);
+  }
+
+  function closeMatchPlayback() {
+    matchLaunchLocked.current = false;
+    setMatchSession(null);
+  }
+
+  function finishMatchPlayback() {
+    if (matchSession) setMatchResult(matchSession.result);
+    closeMatchPlayback();
+  }
+
+  function replayMatch() {
+    matchLaunchLocked.current = false;
+    simulateMatch();
   }
 
   if (phase === 'opponent') {
@@ -679,7 +714,7 @@ export default function Home() {
               선택한 11명과 <strong>{analysis.applied.label}</strong> 전술로 {selectedOpponent.name}에 도전합니다.
             </p>
             <Button onClick={simulateMatch} className="mt-3 h-11 w-full bg-[#123d31] font-black text-white hover:bg-[#0b2e25]">
-              {matchResult ? '다시 경기하기' : '킥오프'}
+              {matchResult ? '다시 경기하기 · 라이브' : '킥오프 · 라이브 경기 보기'}
               <ArrowRight aria-hidden="true" />
             </Button>
 
@@ -714,6 +749,16 @@ export default function Home() {
       >
         <ArrowLeft className="size-3" aria-hidden="true" /> 상대 변경
       </button>
+
+      {matchSession && (
+        <LiveMatchDialog
+          key={matchSession.id}
+          session={matchSession}
+          onCancel={closeMatchPlayback}
+          onFinish={finishMatchPlayback}
+          onReplay={replayMatch}
+        />
+      )}
     </main>
   );
 }
