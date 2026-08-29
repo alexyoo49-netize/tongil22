@@ -58,6 +58,8 @@ const scoringStages = {
   theirs: [3, 5, 6],
 } as const;
 
+const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 const tacticRoutes: Record<TacticId, SlotId[]> = {
   counter: ['RCB', 'CAM', 'RW', 'ST'],
   possession: ['LCM', 'RCM', 'CAM', 'ST'],
@@ -324,7 +326,7 @@ export function LiveMatchDialog({
                       className={`live-player ours ${player.nation} ${isActive ? 'is-active' : ''}`}
                       style={{ left: `${position.x}%`, top: `${position.y}%`, '--move-delay': `${index * 15}ms` } as CSSProperties}
                     >
-                      <img src={`/players/card-${player.card}.webp`} alt="" />
+                      <img src={`${assetBasePath}/players/card-${player.card}.webp`} alt="" />
                       <strong>{player.name}</strong>
                     </span>
                   );

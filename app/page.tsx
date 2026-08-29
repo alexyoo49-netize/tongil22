@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-static';
+
 import { useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -45,6 +47,7 @@ type Filter = 'all' | Nation;
 type MatchResult = MatchPlaybackResult;
 
 const nationLabel: Record<Nation, string> = { south: '남한', north: '북한' };
+const assetBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 
 function scoreTone(score: number) {
   if (score >= 80) return 'fit-good';
@@ -459,7 +462,7 @@ export default function Home() {
                 >
                   <div className="relative">
                     <img
-                      src={`/players/card-${player.card}.webp`}
+                      src={`${assetBasePath}/players/card-${player.card}.webp`}
                       alt={`${player.name} 선수 카드`}
                       width={300}
                       height={450}
@@ -530,7 +533,7 @@ export default function Home() {
                   >
                     <span className={`player-role ${player.nation}`}>{slot.label}</span>
                     <span className="fit-score">{fit}</span>
-                    <img src={`/players/card-${player.card}.webp`} width={300} height={450} alt="" aria-hidden="true" />
+                    <img src={`${assetBasePath}/players/card-${player.card}.webp`} width={300} height={450} alt="" aria-hidden="true" />
                     <strong>{player.name}</strong>
                   </button>
                 );
@@ -541,7 +544,7 @@ export default function Home() {
           <section className="mt-4 grid gap-3 rounded-[22px] border bg-card p-3 shadow-sm sm:grid-cols-[96px_1fr] sm:p-4" aria-label="선택 선수 능력치">
             <div className="flex items-center gap-3 sm:block">
               <img
-                src={`/players/card-${focusedPlayer.card}.webp`}
+                src={`${assetBasePath}/players/card-${focusedPlayer.card}.webp`}
                 alt={`${focusedPlayer.name} 선수 카드`}
                 width={300}
                 height={450}
