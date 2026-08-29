@@ -50,6 +50,7 @@ type MatchScene = {
   activeSlot?: SlotId;
   flash?: 'goal' | 'save' | 'fulltime' | 'chance';
   scoreChanged?: boolean;
+  goalSide?: 'top' | 'bottom';
 };
 
 const scoringStages = {
@@ -139,6 +140,14 @@ function buildScenes(session: MatchPlaybackSession): MatchScene[] {
     const ourGoals = score.ours - previous.ours;
     const theirGoals = score.theirs - previous.theirs;
     const scoreChanged = ourGoals > 0 || theirGoals > 0;
+    const goalSide = ourGoals > 0 && theirGoals > 0
+      ? result.tone === 'loss' ? 'bottom' : 'top'
+      : ourGoals > 0 ? 'top' : theirGoals > 0 ? 'bottom' : undefined;
+    const ball = goalSide === 'top'
+      ? { x: 50, y: 2 }
+      : goalSide === 'bottom'
+        ? { x: 50, y: 98 }
+        : blueprint.ball;
     let commentary = blueprint.fallback;
     let flash = blueprint.flash;
 
@@ -164,7 +173,7 @@ function buildScenes(session: MatchPlaybackSession): MatchScene[] {
     }
 
     previous = score;
-    return { ...blueprint, score, commentary, flash, scoreChanged };
+    return { ...blueprint, ball, score, commentary, flash, scoreChanged, goalSide };
   });
 }
 
@@ -342,7 +351,7 @@ export function LiveMatchDialog({
                 })}
 
                 <span
-                  className="match-ball"
+                  className={`match-ball ${scene.goalSide ? `is-goal-${scene.goalSide}` : ''}`}
                   style={{ left: `${scene.ball.x}%`, top: `${scene.ball.y}%` }}
                 >
                   ⚽

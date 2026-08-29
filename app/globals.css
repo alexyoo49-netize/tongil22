@@ -459,18 +459,6 @@ body:has(.live-match-dialog) [data-slot="dialog-overlay"] {
   border-radius: 50%;
 }
 
-.live-center-circle::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 5px;
-  height: 5px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: rgb(255 255 255 / 78%);
-}
-
 .live-box {
   position: absolute;
   z-index: 1;
@@ -489,14 +477,14 @@ body:has(.live-match-dialog) [data-slot="dialog-overlay"] {
   z-index: 1;
   left: 50%;
   width: 14%;
-  height: 9px;
+  height: 16px;
   transform: translateX(-50%);
   border: 2px solid rgb(255 255 255 / 80%);
   background: repeating-linear-gradient(45deg, transparent 0 4px, rgb(255 255 255 / 18%) 4px 6px);
 }
 
-.live-goal-top { top: 1px; border-bottom: 0; }
-.live-goal-bottom { bottom: 1px; border-top: 0; }
+.live-goal-top { top: 0; border-bottom: 0; }
+.live-goal-bottom { bottom: 0; border-top: 0; }
 
 .live-player {
   position: absolute;
@@ -589,6 +577,14 @@ body:has(.live-match-dialog) [data-slot="dialog-overlay"] {
     left 900ms cubic-bezier(.2, .85, .2, 1),
     top 900ms cubic-bezier(.2, .85, .2, 1);
   will-change: left, top;
+}
+
+.match-ball.is-goal-top {
+  top: 11px !important;
+}
+
+.match-ball.is-goal-bottom {
+  top: calc(100% - 11px) !important;
 }
 
 .match-flash {
