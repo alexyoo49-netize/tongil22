@@ -250,7 +250,14 @@ export function LiveMatchDialog({
   const scoreFlash = scene.flash === 'goal';
 
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) (isFullTime ? onFinish() : onCancel()); }}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (open) return;
+        if (isFullTime) onFinish();
+        else onCancel();
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className="live-match-dialog max-w-[calc(100%-0.75rem)] gap-0 overflow-hidden border-0 bg-[#03110d] p-0 text-white shadow-2xl sm:max-w-[1480px]"
@@ -281,7 +288,7 @@ export function LiveMatchDialog({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-11 w-11 text-white hover:bg-white/10 hover:text-white"
+                  className="spring-press h-11 w-11 text-white hover:bg-white/10 hover:text-white"
                   aria-label={paused ? '경기 재생' : '경기 일시정지'}
                   onClick={() => setPaused((current) => !current)}
                 >
@@ -292,7 +299,7 @@ export function LiveMatchDialog({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-11 w-11 text-white hover:bg-white/10 hover:text-white"
+                className="spring-press h-11 w-11 text-white hover:bg-white/10 hover:text-white"
                 aria-label={isFullTime ? '경기 결과 닫기' : '경기 중계 취소하고 닫기'}
                 onClick={isFullTime ? onFinish : onCancel}
               >
@@ -302,10 +309,10 @@ export function LiveMatchDialog({
           </header>
 
           <div className="match-progress" aria-hidden="true">
-            <div style={{ width: `${progress}%` }} />
+            <div style={{ '--match-progress': progress / 100 } as CSSProperties} />
           </div>
 
-          <div className="live-match-stage">
+          <div className={`live-match-stage ${isFullTime ? 'is-fulltime' : ''}`}>
             <section className="live-pitch-frame" aria-label="경기 장면 시각화">
               <div className="live-pitch" aria-hidden="true">
                 <span className="live-halfway" />
@@ -324,7 +331,11 @@ export function LiveMatchDialog({
                     <span
                       key={slot.id}
                       className={`live-player ours ${player.nation} ${isActive ? 'is-active' : ''}`}
-                      style={{ left: `${position.x}%`, top: `${position.y}%`, '--move-delay': `${index * 15}ms` } as CSSProperties}
+                      style={{
+                        '--move-x': `${position.x - 50}cqw`,
+                        '--move-y': `${position.y - 50}cqh`,
+                        '--move-delay': `${index * 15}ms`,
+                      } as CSSProperties}
                     >
                       <img src={`${assetBasePath}/players/card-${player.card}.webp`} alt="" />
                       <strong>{player.name}</strong>
@@ -340,8 +351,8 @@ export function LiveMatchDialog({
                       key={`opponent-${slot.id}`}
                       className={`live-player opponent ${isActive ? 'is-active' : ''}`}
                       style={{
-                        left: `${position.x}%`,
-                        top: `${position.y}%`,
+                        '--move-x': `${position.x - 50}cqw`,
+                        '--move-y': `${position.y - 50}cqh`,
                         '--opponent-accent': session.opponent.accent,
                         '--move-delay': `${index * 15}ms`,
                       } as CSSProperties}
@@ -354,7 +365,14 @@ export function LiveMatchDialog({
 
                 <span
                   className={`match-ball ${scene.goalSide ? `is-goal-${scene.goalSide}` : ''}`}
-                  style={{ left: `${scene.ball.x}%`, top: `${scene.ball.y}%` }}
+                  style={{
+                    '--ball-x': `${scene.ball.x - 50}cqw`,
+                    '--ball-y': scene.goalSide === 'top'
+                      ? 'calc(-50cqh + 11px)'
+                      : scene.goalSide === 'bottom'
+                        ? 'calc(50cqh - 11px)'
+                        : `${scene.ball.y - 50}cqh`,
+                  } as CSSProperties}
                 >
                   ⚽
                 </span>
@@ -399,10 +417,10 @@ export function LiveMatchDialog({
                     ))}
                   </ul>
                   <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-                    <Button onClick={onReplay} className="h-11 bg-amber-300 font-black text-[#13251f] hover:bg-amber-200">
+                    <Button onClick={onReplay} className="spring-press h-11 bg-amber-300 font-black text-[#13251f] hover:bg-amber-200">
                       <RotateCcw aria-hidden="true" /> 같은 전술로 재경기
                     </Button>
-                    <Button onClick={onFinish} variant="outline" className="h-11 border-white/20 bg-transparent font-black text-white hover:bg-white/10 hover:text-white">
+                    <Button onClick={onFinish} variant="outline" className="spring-press h-11 border-white/20 bg-transparent font-black text-white hover:bg-white/10 hover:text-white">
                       선수·전술로 돌아가기
                     </Button>
                   </div>
@@ -426,7 +444,7 @@ export function LiveMatchDialog({
                     type="button"
                     variant="outline"
                     onClick={() => { setPaused(false); setSceneIndex(scenes.length - 1); }}
-                    className="mt-5 h-11 w-full border-white/20 bg-transparent font-black text-white hover:bg-white/10 hover:text-white"
+                    className="spring-press mt-5 h-11 w-full border-white/20 bg-transparent font-black text-white hover:bg-white/10 hover:text-white"
                   >
                     <FastForward aria-hidden="true" /> 결과로 건너뛰기
                   </Button>

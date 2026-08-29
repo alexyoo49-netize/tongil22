@@ -2,7 +2,14 @@
 
 export const dynamic = 'force-static';
 
-import { useMemo, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -55,6 +62,45 @@ function scoreTone(score: number) {
   return 'fit-bad';
 }
 
+function moveSpotlight(event: ReactPointerEvent<HTMLButtonElement>) {
+  const bounds = event.currentTarget.getBoundingClientRect();
+  event.currentTarget.style.setProperty('--spot-x', `${event.clientX - bounds.left}px`);
+  event.currentTarget.style.setProperty('--spot-y', `${event.clientY - bounds.top}px`);
+}
+
+function AnimatedPercentage({ value }: { value: number }) {
+  const target = Math.round(value);
+  const previous = useRef(target);
+  const [display, setDisplay] = useState(target);
+
+  useEffect(() => {
+    const start = previous.current;
+    previous.current = target;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || start === target) {
+      setDisplay(target);
+      return;
+    }
+
+    let frame = 0;
+    const startedAt = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min((now - startedAt) / 520, 1);
+      const eased = 1 - (1 - progress) ** 3;
+      setDisplay(Math.round(start + (target - start) * eased));
+      if (progress < 1) frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [target]);
+
+  return (
+    <strong className="win-percentage" aria-label={`예상 승률 ${target}퍼센트`}>
+      <span key={target} className="number-roll-digits" aria-hidden="true">{display}%</span>
+    </strong>
+  );
+}
+
 function OpponentSelection({
   selected,
   onSelect,
@@ -65,35 +111,48 @@ function OpponentSelection({
   onContinue: () => void;
 }) {
   return (
-    <main className="opponent-screen min-h-screen text-white">
-      <div className="mx-auto max-w-[1400px] px-4 py-7 sm:px-6 sm:py-10">
-        <header className="mb-7 flex items-center justify-between gap-4">
+    <main className="opponent-screen min-h-screen text-white" data-motion-root>
+      <div className="opponent-grid" aria-hidden="true" />
+      <div className="relative mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8">
+        <header className="mb-6 flex items-center justify-between gap-4" data-reveal>
           <div className="flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-full border border-white/15 bg-white/10">
+            <div className="brand-mark grid size-10 place-items-center rounded-full border border-white/15 bg-white/10">
               <Swords className="size-5" aria-hidden="true" />
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-300">
-                One Korea · One XI
+                One Korea / One XI
               </p>
               <p className="font-black">통일 대표팀 메이커</p>
             </div>
           </div>
-          <Badge className="border-white/10 bg-white/10 text-white">WORLD 7</Badge>
+          <div className="flex items-center gap-2">
+            <span className="hidden text-[10px] font-black uppercase tracking-[0.18em] text-white/35 sm:inline">Mission 01</span>
+            <Badge className="border-white/10 bg-white/10 text-white">WORLD 7</Badge>
+          </div>
         </header>
 
-        <section className="mb-7 max-w-3xl">
-          <p className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-300">
-            <span className="grid size-6 place-items-center rounded-full bg-amber-300 text-[11px] text-[#10251f]">1</span>
-            첫 번째 결정
-          </p>
-          <h1 className="text-balance text-3xl font-black tracking-[-0.045em] sm:text-5xl">
-            어느 강호와 먼저 맞붙을까요?
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-emerald-50/65 sm:text-base">
-            상대의 축구 스타일을 먼저 읽고, 그 약점을 공략할 선수 11명과 전술을 설계하세요.
-            선택에 따라 승률이 실시간으로 바뀝니다.
-          </p>
+        <section className="opponent-hero mb-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_370px] lg:items-end">
+          <div>
+            <p className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-300" data-reveal>
+              <span className="grid size-6 place-items-center rounded-full bg-amber-300 text-[11px] text-[#10251f]">1</span>
+              첫 번째 결정
+            </p>
+            <h1 className="line-mask-heading text-balance text-4xl font-black tracking-[-0.055em] sm:text-6xl" aria-label="상대를 읽고 승리를 설계하세요">
+              <span className="line-mask-row"><span className="line-mask-copy">상대를 읽고,</span></span>
+              <span className="line-mask-row"><span className="line-mask-copy">승리를 설계하세요.</span></span>
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-emerald-50/65 sm:text-base" data-reveal>
+              세계 7개 강호 중 상대를 고르면 약점 분석이 열립니다. 그다음 남북 선수 11명과
+              전술을 조합해 승률을 끌어올리세요.
+            </p>
+          </div>
+
+          <ol className="mission-route" aria-label="게임 진행 순서" data-reveal>
+            <li className="is-current"><span>01</span><strong>상대 분석</strong><small>WORLD 7</small></li>
+            <li><span>02</span><strong>XI 구성</strong><small>22 PLAYER POOL</small></li>
+            <li><span>03</span><strong>실전 재생</strong><small>LIVE MATCH</small></li>
+          </ol>
         </section>
 
         <section aria-label="상대 국가 7개" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -105,8 +164,12 @@ function OpponentSelection({
                 key={opponent.id}
                 aria-pressed={isSelected}
                 onClick={() => onSelect(opponent)}
-                className={`country-card group ${isSelected ? 'is-selected' : ''} ${index === opponents.length - 1 ? 'lg:col-start-2' : ''}`}
-                style={isSelected ? { borderColor: opponent.accent } : undefined}
+                onPointerMove={moveSpotlight}
+                className={`country-card spring-press group ${isSelected ? 'is-selected' : ''} ${index === opponents.length - 1 ? 'lg:col-start-2' : ''}`}
+                data-reveal
+                style={{
+                  ...(isSelected ? { borderColor: opponent.accent } : {}),
+                } as CSSProperties}
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-4xl leading-none sm:text-5xl" aria-hidden="true">{opponent.flag}</span>
@@ -129,17 +192,32 @@ function OpponentSelection({
           })}
         </section>
 
-        <section className="mt-5 grid gap-3 rounded-[24px] border border-white/10 bg-white/[0.055] p-4 backdrop-blur sm:grid-cols-[1fr_auto] sm:items-center sm:p-5">
+        <section className="scouting-dock mt-5 grid gap-4 rounded-[24px] border border-white/10 p-4 backdrop-blur sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5" data-reveal>
           {selected ? (
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl" aria-hidden="true">{selected.flag}</span>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-emerald-300">Scouting brief</p>
-                  <h3 className="font-black">{selected.name}의 약점</h3>
+            <div key={selected.id} className="brief-swap grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl" aria-hidden="true">{selected.flag}</span>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-emerald-300">Scouting brief</p>
+                    <h3 className="font-black">{selected.name}의 약점</h3>
+                  </div>
                 </div>
+                <p className="mt-2 text-sm leading-relaxed text-white/65">{selected.weakPoint}</p>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-white/65">{selected.weakPoint}</p>
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-black">
+                {[
+                  ['공격', selected.attack],
+                  ['수비', selected.defense],
+                ].map(([label, value]) => (
+                  <div key={label as string} className="rounded-xl border border-white/10 bg-black/15 p-2.5">
+                    <div className="flex items-center justify-between text-white/50"><span>{label}</span><strong className="text-white">{value}</strong></div>
+                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+                      <span className="meter-fill block h-full rounded-full bg-amber-300" style={{ '--meter-value': Number(value) / 100 } as CSSProperties} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
             <div>
@@ -150,7 +228,7 @@ function OpponentSelection({
           <Button
             disabled={!selected}
             onClick={onContinue}
-            className="h-12 min-w-52 bg-amber-300 px-5 font-black text-[#12231e] hover:bg-amber-200"
+            className="spring-press h-12 min-w-52 bg-amber-300 px-5 font-black text-[#12231e] hover:bg-amber-200"
           >
             이 상대와 경기 준비
             <ArrowRight aria-hidden="true" />
@@ -200,6 +278,36 @@ export default function Home() {
         label: statLabels[key as keyof OutfieldStats], value,
       }));
   const filteredPlayers = players.filter((player) => filter === 'all' || player.nation === filter);
+
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>('[data-motion-root]');
+    if (!root) return;
+    const elements = Array.from(root.querySelectorAll<HTMLElement>('[data-reveal]'));
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      elements.forEach((element) => element.classList.add('is-revealed'));
+      return;
+    }
+
+    root.classList.add('motion-ready');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-revealed');
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -6% 0px' },
+    );
+
+    elements.forEach((element, index) => {
+      element.style.setProperty('--reveal-order', String(index % 4));
+      observer.observe(element);
+    });
+    return () => observer.disconnect();
+  }, [phase]);
 
   function clearMatch() {
     matchLaunchLocked.current = false;
@@ -362,7 +470,7 @@ export default function Home() {
   const recommendedGain = autoAnalysis.winProbability - analysis.winProbability;
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="builder-screen min-h-screen bg-background text-foreground" data-motion-root>
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#071a16]/95 text-white backdrop-blur-xl">
         <div className="mx-auto flex min-h-16 max-w-[1580px] items-center justify-between gap-3 px-4 py-2 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
@@ -370,7 +478,7 @@ export default function Home() {
               <Users className="size-4" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[9px] font-black uppercase tracking-[0.2em] text-emerald-300">One Korea · One XI</p>
+              <p className="truncate text-[9px] font-black uppercase tracking-[0.2em] text-emerald-300">One Korea / One XI</p>
               <h1 className="truncate text-sm font-black tracking-tight sm:text-base">통일 대표팀 메이커</h1>
             </div>
           </div>
@@ -387,7 +495,7 @@ export default function Home() {
             <button
               type="button"
               onClick={returnToOpponent}
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-3 py-1.5 text-xs font-black transition hover:bg-white/15"
+              className="spring-press flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-3 py-1.5 text-xs font-black transition hover:bg-white/15"
             >
               <span className="text-base" aria-hidden="true">{selectedOpponent.flag}</span>
               <span className="hidden sm:inline">vs {selectedOpponent.name}</span>
@@ -406,8 +514,8 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-[1580px] gap-4 px-4 py-4 sm:px-6 xl:grid-cols-[300px_minmax(420px,1fr)_340px]">
-        <aside className="order-1 rounded-[22px] border bg-card shadow-sm xl:sticky xl:top-20 xl:max-h-[calc(100vh-96px)] xl:overflow-hidden">
+      <section className="mx-auto grid max-w-[1580px] gap-4 px-4 py-4 sm:px-6 xl:grid-cols-[290px_minmax(440px,1fr)_330px]">
+        <aside className="game-panel order-1 rounded-[22px] border bg-card shadow-sm xl:sticky xl:top-20 xl:max-h-[calc(100vh-96px)] xl:overflow-hidden" data-reveal>
           <div className="border-b p-4">
             <div className="flex items-end justify-between gap-2">
               <div>
@@ -417,10 +525,10 @@ export default function Home() {
               <span className="text-xs font-black text-muted-foreground">11 / 11</span>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" onClick={() => applyPreset('united')} className="text-xs font-black">
+              <Button variant="outline" size="sm" onClick={() => applyPreset('united')} className="spring-press text-xs font-black">
                 <Users aria-hidden="true" /> 통합 우선
               </Button>
-              <Button variant="outline" size="sm" onClick={() => applyPreset('power')} className="text-xs font-black">
+              <Button variant="outline" size="sm" onClick={() => applyPreset('power')} className="spring-press text-xs font-black">
                 <Zap aria-hidden="true" /> 전력 우선
               </Button>
             </div>
@@ -435,7 +543,7 @@ export default function Home() {
                   key={value}
                   aria-pressed={filter === value}
                   onClick={() => setFilter(value)}
-                  className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-black transition ${filter === value ? 'bg-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                  className={`spring-press flex-1 rounded-lg px-2 py-1.5 text-[11px] font-black transition ${filter === value ? 'bg-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                   {label}
                 </button>
@@ -458,7 +566,7 @@ export default function Home() {
                   disabled={incompatible}
                   aria-pressed={isPending}
                   onClick={() => handleRosterPlayer(player.id)}
-                  className={`roster-card group ${assignedSlot ? 'is-selected' : ''} ${isPending ? 'is-pending' : ''}`}
+                  className={`roster-card spring-press group ${assignedSlot ? 'is-selected' : ''} ${isPending ? 'is-pending' : ''}`}
                 >
                   <div className="relative">
                     <img
@@ -494,7 +602,7 @@ export default function Home() {
           </div>
         </aside>
 
-        <section className="order-2 min-w-0">
+        <section className="order-2 min-w-0" data-reveal>
           <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="eyebrow">4-2-3-1 · Starting XI</p>
@@ -512,7 +620,7 @@ export default function Home() {
             <span>{notice}</span>
           </div>
 
-          <div className="pitch-shell">
+          <div className="pitch-shell formation-reveal">
             <div className="pitch" aria-label="4-2-3-1 포메이션 경기장">
               <div className="pitch-half" />
               <div className="pitch-circle" />
@@ -541,7 +649,7 @@ export default function Home() {
             </div>
           </div>
 
-          <section className="mt-4 grid gap-3 rounded-[22px] border bg-card p-3 shadow-sm sm:grid-cols-[96px_1fr] sm:p-4" aria-label="선택 선수 능력치">
+          <section className="game-panel mt-4 grid gap-3 rounded-[22px] border bg-card p-3 shadow-sm sm:grid-cols-[96px_1fr] sm:p-4" aria-label="선택 선수 능력치">
             <div className="flex items-center gap-3 sm:block">
               <img
                 src={`${assetBasePath}/players/card-${focusedPlayer.card}.webp`}
@@ -565,7 +673,7 @@ export default function Home() {
                     <strong>{stat.value}</strong>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${stat.value}%` }} />
+                    <div className="meter-fill h-full rounded-full bg-emerald-600" style={{ '--meter-value': stat.value / 100 } as CSSProperties} />
                   </div>
                 </div>
               ))}
@@ -574,16 +682,20 @@ export default function Home() {
         </section>
 
         <aside className="order-3 space-y-3 xl:sticky xl:top-20 xl:max-h-[calc(100vh-96px)] xl:overflow-y-auto xl:pr-1">
-          <section className="rounded-[22px] border bg-[#0c211c] p-4 text-white shadow-xl shadow-emerald-950/10">
+          <section className="win-chance-panel rounded-[22px] border bg-[#0c211c] p-4 text-white shadow-xl shadow-emerald-950/10" data-reveal>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="eyebrow text-emerald-300">Live win chance</p>
                 <div className="mt-1 flex items-baseline gap-2">
-                  <strong className="text-4xl font-black tracking-[-0.05em]">{Math.round(analysis.winProbability)}%</strong>
+                  <AnimatedPercentage value={analysis.winProbability} />
                   <span className="text-xs font-bold text-emerald-100/55">vs {selectedOpponent.name}</span>
                 </div>
               </div>
-              <div className="grid size-10 place-items-center rounded-full bg-amber-300 text-[#14221e]">
+              <div
+                className="win-gauge grid size-11 place-items-center rounded-full text-[#14221e]"
+                style={{ '--win-angle': `${analysis.winProbability * 3.6}deg` } as CSSProperties}
+                aria-hidden="true"
+              >
                 <Trophy className="size-5" aria-hidden="true" />
               </div>
             </div>
@@ -615,7 +727,7 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="rounded-[22px] border bg-card p-4 shadow-sm">
+          <section className="game-panel rounded-[22px] border bg-card p-4 shadow-sm" data-reveal>
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="eyebrow">Step 2 · 전술 선택</p>
@@ -628,7 +740,7 @@ export default function Home() {
               type="button"
               aria-pressed={chosenTactic === null}
               onClick={() => selectTactic(null)}
-              className={`mt-3 flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition ${chosenTactic === null ? 'border-emerald-500 bg-emerald-50' : 'hover:bg-muted/60'}`}
+              className={`spring-press mt-3 flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition ${chosenTactic === null ? 'border-emerald-500 bg-emerald-50' : 'hover:bg-muted/60'}`}
             >
               <span>
                 <strong className="block text-xs">자동 추천 적용</strong>
@@ -648,7 +760,7 @@ export default function Home() {
                     aria-label={`${tactic.label}, 예상 승률 ${Math.round(tactic.winProbability)}%, 전술 적합도 ${Math.round(tactic.adjusted)}점, 상대 보정 ${tactic.bonus >= 0 ? '+' : ''}${tactic.bonus}`}
                     aria-pressed={isChosen}
                     onClick={() => selectTactic(tactic.id)}
-                    className={`tactic-row ${isChosen ? 'is-chosen' : ''}`}
+                    className={`tactic-row spring-press ${isChosen ? 'is-chosen' : ''}`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -663,7 +775,10 @@ export default function Home() {
                       <strong className="text-sm tabular-nums">{Math.round(tactic.winProbability)}%</strong>
                     </div>
                     <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
-                      <div className={`h-full rounded-full ${isRecommended ? 'bg-amber-400' : 'bg-emerald-600'}`} style={{ width: `${tactic.winProbability}%` }} />
+                      <div
+                        className={`meter-fill h-full rounded-full ${isRecommended ? 'bg-amber-400' : 'bg-emerald-600'}`}
+                        style={{ '--meter-value': tactic.winProbability / 100 } as CSSProperties}
+                      />
                     </div>
                   </button>
                 );
@@ -674,14 +789,14 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => selectTactic(null)}
-                className="mt-3 w-full rounded-xl bg-amber-50 px-3 py-2 text-left text-[10px] font-bold text-amber-900"
+                className="spring-press mt-3 w-full rounded-xl bg-amber-50 px-3 py-2 text-left text-[10px] font-bold text-amber-900"
               >
                 추천 전술로 바꾸면 승률이 약 +{recommendedGain.toFixed(1)}%p 올라갑니다.
               </button>
             )}
           </section>
 
-          <section className="rounded-[22px] border bg-card p-4 shadow-sm">
+          <section className="game-panel rounded-[22px] border bg-card p-4 shadow-sm" data-reveal>
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="eyebrow">Scouting report</p>
@@ -705,7 +820,7 @@ export default function Home() {
             </ul>
           </section>
 
-          <section className="rounded-[22px] border border-amber-300/60 bg-amber-50 p-4 shadow-sm" aria-live="polite">
+          <section className="game-panel rounded-[22px] border border-amber-300/60 bg-amber-50 p-4 shadow-sm" aria-live="polite" data-reveal>
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="eyebrow text-amber-700">Step 3 · Match</p>
@@ -716,13 +831,13 @@ export default function Home() {
             <p className="mt-2 text-xs leading-relaxed text-amber-950/65">
               선택한 11명과 <strong>{analysis.applied.label}</strong> 전술로 {selectedOpponent.name}에 도전합니다.
             </p>
-            <Button onClick={simulateMatch} className="mt-3 h-11 w-full bg-[#123d31] font-black text-white hover:bg-[#0b2e25]">
+            <Button onClick={simulateMatch} className="spring-press mt-3 h-11 w-full bg-[#123d31] font-black text-white hover:bg-[#0b2e25]">
               {matchResult ? '다시 경기하기 · 라이브' : '킥오프 · 라이브 경기 보기'}
               <ArrowRight aria-hidden="true" />
             </Button>
 
             {matchResult && (
-              <div className={`match-result mt-3 ${matchResult.tone}`}>
+              <div className={`match-result result-reveal mt-3 ${matchResult.tone}`}>
                 <p className="text-[10px] font-black uppercase tracking-wider opacity-60">Full time</p>
                 <div className="my-2 flex items-center justify-center gap-3">
                   <span className="text-xs font-black">통일 XI</span>
@@ -748,7 +863,7 @@ export default function Home() {
       <button
         type="button"
         onClick={returnToOpponent}
-        className="fixed bottom-4 left-4 z-40 hidden items-center gap-1 rounded-full border bg-white/90 px-3 py-2 text-[10px] font-black shadow-lg backdrop-blur sm:flex xl:hidden"
+        className="spring-press fixed bottom-4 left-4 z-40 hidden items-center gap-1 rounded-full border bg-white/90 px-3 py-2 text-[10px] font-black shadow-lg backdrop-blur sm:flex xl:hidden"
       >
         <ArrowLeft className="size-3" aria-hidden="true" /> 상대 변경
       </button>
